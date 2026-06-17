@@ -90,10 +90,10 @@ async function previewMetadata(scadFile) {
 
   if (scadFile === "white_bathtub_3d.scad") {
     const z = constants.axle_z ?? constants.wheel_center_z * constants.profile_z_scale;
-    const positiveY = constants.tub_width / 2 + wheelWidth / 2 - 0.25;
-    const negativeY = -constants.tub_width / 2 - wheelWidth / 2 + 0.25;
+    const positiveY = constants.wheel_y ?? constants.tub_width / 2 + wheelWidth / 2 - 0.25;
+    const negativeY = -positiveY;
     const axleInset = constants.preview_axle_inset ?? 0;
-    const axleLength = constants.tub_width + wheelWidth * 2 - axleInset * 2;
+    const axleLength = (constants.wheel_pair_width ?? constants.tub_width + wheelWidth * 2) - axleInset * 2;
     const axleDiameter = constants.axle_diameter ?? 1.4;
 
     return {

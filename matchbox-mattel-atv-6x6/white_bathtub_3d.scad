@@ -18,6 +18,7 @@ show_preview_wheels = true;
 show_preview_axles = true;
 
 wheel_diameter = 10.0;
+wheel_pair_width = 30.0;
 wheel_width = 5.5;
 wheel_spacing = 10.8;
 wheel_x = [-wheel_spacing, 0.0, wheel_spacing];
@@ -49,6 +50,7 @@ floor_z = bottom_z_front * profile_z_scale;
 inner_y = tub_width / 2 - wall_thickness;
 inner_span = tub_width - wall_thickness * 2 - 0.35;
 axle_z = wheel_center_z * profile_z_scale;
+wheel_y = wheel_pair_width / 2 - wheel_width / 2;
 ledge_x_min = -12.7;
 ledge_x_max = 13.8;
 ledge_len = ledge_x_max - ledge_x_min;
@@ -187,7 +189,7 @@ module preview_axle(xpos) {
     color([0.38, 0.38, 0.34, 0.78])
         translate([xpos, 0, axle_z])
             rotate([90, 0, 0])
-                cylinder(h = tub_width + wheel_width * 2.0 - preview_axle_inset * 2, d = axle_diameter, center = true);
+                cylinder(h = wheel_pair_width - preview_axle_inset * 2, d = axle_diameter, center = true);
 }
 
 color("white")
@@ -195,8 +197,8 @@ color("white")
 
 if (show_preview_wheels) {
     for (xpos = wheel_x) {
-        preview_wheel(xpos, tub_width / 2 + wheel_width / 2 - 0.25);
-        preview_wheel(xpos, -tub_width / 2 - wheel_width / 2 + 0.25);
+        preview_wheel(xpos, wheel_y);
+        preview_wheel(xpos, -wheel_y);
     }
 }
 
