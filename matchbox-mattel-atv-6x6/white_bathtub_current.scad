@@ -33,8 +33,12 @@ module side_profile_2d() {
     scale([1, profile_z_scale])
         polygon(points=[
             // shorter feedback6 profile: close wheels, straight upper cut, sharp V pockets
-            [-16.5, bottom_z_rear],
-            [-16.7, top_z_rear],
+            // rear block is closed instead of reading like an open cart handle
+            [-13.7, bottom_z_rear - 0.08],
+            [-15.0, bottom_z_rear - 0.08],
+            [-16.3, bottom_z_rear + 0.18],
+            [-16.4, top_z_rear - 0.18],
+            [-16.2, top_z_rear],
             [-13.2, top_z_rear + 0.03],
             [-10.8, pocket_floor_z],
             [ -8.4, top_z_rear + 0.03],
@@ -52,14 +56,14 @@ module side_profile_2d() {
             [ 18.8, top_z_front - 0.55],
             [ 18.5, top_z_front - 1.10],
             [ 16.6, top_z_front - 2.00],
-            [ 14.7, bottom_z_front],
+            [ 14.5, bottom_z_front],
 
-            // short straight lower cut
-            [  7.0, bottom_z_front + 0.02],
-            [  0.0, bottom_z_front + 0.08],
-            [ -7.0, bottom_z_rear - 0.02],
-            [-13.7, bottom_z_rear - 0.05],
-            [-16.2, bottom_z_rear - 0.08],
+            // long, low side cut from the user's blue trim guide
+            [  9.2, bottom_z_front + 0.02],
+            [  3.2, bottom_z_front + 0.05],
+            [ -2.6, bottom_z_front + 0.10],
+            [ -8.0, bottom_z_front + 0.03],
+            [-12.5, bottom_z_rear - 0.06],
         ]);
 }
 

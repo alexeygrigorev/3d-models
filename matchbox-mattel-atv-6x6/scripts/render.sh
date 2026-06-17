@@ -3,6 +3,7 @@ set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 OPENSCAD_BIN="${OPENSCAD_BIN:-openscad}"
+OPENSCAD_PNG_CMD=("$OPENSCAD_BIN")
 
 if ! command -v "$OPENSCAD_BIN" >/dev/null 2>&1; then
   cat >&2 <<'EOF'
@@ -17,6 +18,10 @@ EOF
   exit 127
 fi
 
+if [[ -z "${DISPLAY:-}" ]] && command -v xvfb-run >/dev/null 2>&1; then
+  OPENSCAD_PNG_CMD=(xvfb-run -a "$OPENSCAD_BIN")
+fi
+
 mkdir -p "$ROOT/renders" "$ROOT/stl"
 
 render_png() {
@@ -24,7 +29,7 @@ render_png() {
   local name="$2"
   local camera="$3"
 
-  "$OPENSCAD_BIN" \
+  "${OPENSCAD_PNG_CMD[@]}" \
     -o "$ROOT/renders/${name}.png" \
     --imgsize=1600,1000 \
     --viewall \
@@ -40,6 +45,7 @@ render_stl() {
 
   "$OPENSCAD_BIN" \
     -D 'show_preview_wheels=false' \
+    -D 'show_preview_axles=false' \
     -D 'show_axles=false' \
     -o "$ROOT/stl/${name}.stl" \
     "$ROOT/$scad"
@@ -56,4 +62,3 @@ render_stl "atv_6x6_body.scad" "atv_6x6_body_no_wheels"
 
 echo "Wrote renders to $ROOT/renders"
 echo "Wrote STL files to $ROOT/stl"
-

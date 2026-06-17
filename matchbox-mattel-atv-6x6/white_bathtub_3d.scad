@@ -1,22 +1,27 @@
 /*
-  Matchbox/Mattel ATV 6x6 - first 3D white bathtub.
+  Matchbox/Mattel ATV 6x6 - white wheel bathtub from side panel.
   Units: millimeters.
 
-  This file turns the accepted side profile into a simple printable tub:
-    - two side walls with the current feedback6 side profile;
-    - a flat bottom/floor tying the side walls together;
-    - shallow internal ledges for the future gray axle holder;
-    - transparent wheel previews only for fit checking.
+  Current stage: only the lower white part that grows out of the accepted
+  side panel. This is not the full vehicle body.
+
+  Construction:
+    - the accepted side profile is extruded across the full tub width;
+    - the inside is cut out from above, leaving one continuous shell;
+    - the profile itself wraps into the floor and the opposite side;
+    - shallow internal details are secondary and do not form the tub shape.
 */
 
 $fn = 64;
 
 show_preview_wheels = true;
+show_preview_axles = true;
 
 wheel_diameter = 10.0;
 wheel_width = 5.5;
 wheel_spacing = 10.8;
 wheel_x = [-wheel_spacing, 0.0, wheel_spacing];
+axle_diameter = 1.4;
 
 profile_z_scale = 1.50;
 pocket_floor_z = 3.85;
@@ -26,23 +31,35 @@ top_z_front = 7.20;
 bottom_z_rear = 2.30;
 bottom_z_front = 2.12;
 
-tub_width = 13.8;
-wall_thickness = 1.15;
-floor_thickness = 1.15;
-ledge_width = 1.1;
-ledge_height = 0.85;
+tub_width = 15.2;
+wall_thickness = 1.25;
+floor_thickness = 1.25;
+ledge_width = 1.15;
+ledge_height = 0.9;
+screw_boss_d = 5.0;
+screw_hole_d = 2.0;
+preview_axle_inset = 0.65;
 
 x_min = -16.7;
 x_max = 18.8;
 body_len = x_max - x_min;
 floor_z = bottom_z_front * profile_z_scale;
-side_y = tub_width / 2 - wall_thickness / 2;
+inner_y = tub_width / 2 - wall_thickness;
+inner_span = tub_width - wall_thickness * 2 - 0.35;
+axle_z = wheel_center_z * profile_z_scale;
+ledge_x_min = -12.7;
+ledge_x_max = 13.8;
+ledge_len = ledge_x_max - ledge_x_min;
+ledge_center_x = (ledge_x_min + ledge_x_max) / 2;
 
 module side_profile_2d() {
     scale([1, profile_z_scale])
         polygon(points=[
-            [-16.5, bottom_z_rear],
-            [-16.7, top_z_rear],
+            [-13.7, bottom_z_rear - 0.08],
+            [-15.0, bottom_z_rear - 0.08],
+            [-16.3, bottom_z_rear + 0.18],
+            [-16.4, top_z_rear - 0.18],
+            [-16.2, top_z_rear],
             [-13.2, top_z_rear + 0.03],
             [-10.8, pocket_floor_z],
             [ -8.4, top_z_rear + 0.03],
@@ -59,65 +76,90 @@ module side_profile_2d() {
             [ 18.8, top_z_front - 0.55],
             [ 18.5, top_z_front - 1.10],
             [ 16.6, top_z_front - 2.00],
-            [ 14.7, bottom_z_front],
+            [ 14.5, bottom_z_front],
 
-            [  7.0, bottom_z_front + 0.02],
-            [  0.0, bottom_z_front + 0.08],
-            [ -7.0, bottom_z_rear - 0.02],
-            [-13.7, bottom_z_rear - 0.05],
-            [-16.2, bottom_z_rear - 0.08],
+            [  9.2, bottom_z_front + 0.02],
+            [  3.2, bottom_z_front + 0.05],
+            [ -2.6, bottom_z_front + 0.10],
+            [ -8.0, bottom_z_front + 0.03],
+            [-12.5, bottom_z_rear - 0.06],
         ]);
 }
 
-module side_wall(ypos) {
-    translate([0, ypos, 0])
-        rotate([90, 0, 0])
-            linear_extrude(height = wall_thickness, center = true)
-                side_profile_2d();
+module outer_profile_body() {
+    rotate([90, 0, 0])
+        linear_extrude(height = tub_width, center = true)
+            side_profile_2d();
 }
 
-module bottom_floor() {
-    color("white")
-        translate([(x_min + x_max) / 2, 0, floor_z - floor_thickness / 2])
-            cube([body_len - 1.2, tub_width, floor_thickness], center = true);
+module inner_cavity_cut() {
+    // Open top hollow. This removes the middle of the extruded profile while
+    // preserving the side walls, end lips, and the profile-shaped bottom.
+    translate([(x_min + x_max) / 2 + 0.1, 0, floor_z + floor_thickness + 16])
+        cube([body_len - 4.0, tub_width - wall_thickness * 2, 32], center = true);
 }
 
 module internal_ledge(ypos) {
-    color("white")
-        translate([(x_min + x_max) / 2 - 0.3, ypos, floor_z + ledge_height / 2])
-            cube([body_len - 3.2, ledge_width, ledge_height], center = true);
+    translate([ledge_center_x, ypos, floor_z + ledge_height / 2])
+        cube([ledge_len, ledge_width, ledge_height], center = true);
 }
 
-module end_rib(xpos, width) {
-    color("white")
-        translate([xpos, 0, floor_z + 1.0])
-            cube([width, tub_width, 2.0], center = true);
+module screw_boss() {
+    translate([6.1, 0, floor_z])
+        cylinder(h = 2.6, d = screw_boss_d);
+}
+
+module screw_hole_cut() {
+    translate([6.1, 0, floor_z - 0.2])
+        cylinder(h = 4.0, d = screw_hole_d);
+}
+
+module axle_saddle_cut(xpos) {
+    // Internal lower cradle only. It stays away from the side panels, so the
+    // white tub does not gain visible round axle holes.
+    translate([xpos, 0, axle_z + 0.15])
+        rotate([90, 0, 0])
+            cylinder(h = inner_span - ledge_width * 2.2, d = axle_diameter + 1.0, center = true);
 }
 
 module bathtub_body() {
-    union() {
-        color("white") side_wall(side_y);
-        color("white") side_wall(-side_y);
-        bottom_floor();
+    difference() {
+        union() {
+            difference() {
+                outer_profile_body();
+                inner_cavity_cut();
+            }
 
-        // Simple inner ledges; the gray axle-holder insert can sit on these later.
-        internal_ledge(tub_width / 2 - wall_thickness - ledge_width / 2);
-        internal_ledge(-tub_width / 2 + wall_thickness + ledge_width / 2);
+            // Small shelves for the future gray insert; the tub shape itself
+            // comes from the hollowed profile body above.
+            internal_ledge(inner_y - ledge_width / 2);
+            internal_ledge(-inner_y + ledge_width / 2);
 
-        // Short end ribs close the tub visually without adding wheel holes.
-        end_rib(x_min + 0.8, 1.2);
-        end_rib(x_max - 1.4, 1.2);
+            screw_boss();
+        }
+
+        screw_hole_cut();
+        for (xpos = wheel_x)
+            axle_saddle_cut(xpos);
     }
 }
 
 module preview_wheel(xpos, ypos) {
     color([0.96, 0.96, 0.90, 0.38])
-        translate([xpos, ypos, wheel_center_z * profile_z_scale])
+        translate([xpos, ypos, axle_z])
             rotate([90, 0, 0])
                 cylinder(h = wheel_width, d = wheel_diameter, center = true);
 }
 
-bathtub_body();
+module preview_axle(xpos) {
+    color([0.38, 0.38, 0.34, 0.78])
+        translate([xpos, 0, axle_z])
+            rotate([90, 0, 0])
+                cylinder(h = tub_width + wheel_width * 2.0 - preview_axle_inset * 2, d = axle_diameter, center = true);
+}
+
+color("white")
+    bathtub_body();
 
 if (show_preview_wheels) {
     for (xpos = wheel_x) {
@@ -125,3 +167,7 @@ if (show_preview_wheels) {
         preview_wheel(xpos, -tub_width / 2 - wheel_width / 2 + 0.25);
     }
 }
+
+if (show_preview_axles)
+    for (xpos = wheel_x)
+        preview_axle(xpos);

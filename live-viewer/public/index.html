@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Live 3D Model Viewer</title>
+    <link rel="stylesheet" href="/styles.css" />
+    <script type="importmap">
+      {
+        "imports": {
+          "three": "/vendor/build/three.module.js"
+        }
+      }
+    </script>
+  </head>
+  <body>
+    <main class="viewport">
+      <div class="topbar">
+        <select id="modelSelect" aria-label="Model"></select>
+        <button id="renderButton" type="button">Render</button>
+        <button id="resetButton" type="button">Reset View</button>
+        <label class="toggle">
+          <input id="wireToggle" type="checkbox" />
+          <span>Wire</span>
+        </label>
+        <label class="toggle">
+          <input id="gridToggle" type="checkbox" checked />
+          <span>Grid</span>
+        </label>
+        <div id="status" class="status">Connecting...</div>
+      </div>
+      <pre id="log" class="log" aria-live="polite"></pre>
+      <canvas id="canvas"></canvas>
+    </main>
+
+    <script type="module" src="/app.js"></script>
+  </body>
+</html>

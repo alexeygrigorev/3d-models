@@ -1,0 +1,14 @@
+{
+  "name": "3d-models-live-viewer",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "start": "node server.mjs"
+  },
+  "dependencies": {
+    "three": "^0.179.1"
+  },
+  "devDependencies": {
+    "playwright": "^1.60.0"
+  }
+}
