@@ -149,3 +149,34 @@ Current comparison helper:
 - It renders the clean profile, aligns it with the sketch by the bottom edge,
   prints per-section top/bottom pixel differences, and writes
   `renders/profile_compare_debug.png`.
+
+## Current 3D wheel/axle fit
+
+Current file:
+
+- `white_bathtub_3d.scad`
+
+Current wheel assumption:
+
+- Replacement wheel pair overall width: about 30 mm.
+- Preview wheel diameter: 10 mm.
+- Preview wheel width: 5.5 mm, based on the reference photos where the wheels
+  are much narrower than their diameter.
+- Preview axle diameter: 1.0 mm.
+
+Current fit details:
+
+- The wheels remain transparent preview geometry; they are not exported into
+  printable STL.
+- The wheel pair is previewed at the 30 mm overall width, with the white tub
+  between the wheels.
+- Each wheel pocket has a narrow open-top axle drop slot so the real wheel axle
+  can be lowered into the tub from above.
+- At the bottom of each slot there is a small round axle seat.
+- On the outside of each side wall, around the axle seat, there is a small
+  lower half-washer spacer. It is intentionally not a full washer: the top is
+  open so the axle can pass down through the slot.
+- The half-washer spacer exists to keep the wheel from rubbing directly on the
+  white tub side wall.
+- Do not replace the half-washer with a full circular boss unless axle
+  insertion is solved another way.

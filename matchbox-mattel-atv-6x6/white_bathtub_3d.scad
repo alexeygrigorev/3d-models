@@ -40,8 +40,10 @@ ledge_height = 0.9;
 screw_boss_d = 5.0;
 screw_hole_d = 2.0;
 preview_axle_inset = 0.65;
-axle_seat_clearance = 0.25;
-axle_drop_slot_clearance = 0.35;
+axle_seat_clearance = 0.45;
+axle_drop_slot_clearance = 0.55;
+wheel_spacer_d = 3.0;
+wheel_spacer_depth = 0.35;
 
 x_min = -16.7;
 x_max = 18.8;
@@ -150,6 +152,17 @@ module axle_drop_slot_cut(xpos, side) {
         ], center = true);
 }
 
+module wheel_spacer_boss(xpos, side) {
+    intersection() {
+        translate([xpos, side * (tub_width / 2 + wheel_spacer_depth / 2 - 0.02), axle_z])
+            rotate([90, 0, 0])
+                cylinder(h = wheel_spacer_depth, d = wheel_spacer_d, center = true);
+
+        translate([xpos, side * (tub_width / 2 + wheel_spacer_depth / 2 - 0.02), axle_z - wheel_spacer_d / 4])
+            cube([wheel_spacer_d, wheel_spacer_depth + 0.08, wheel_spacer_d / 2], center = true);
+    }
+}
+
 module bathtub_body() {
     difference() {
         union() {
@@ -164,6 +177,11 @@ module bathtub_body() {
             internal_ledge(-inner_y + ledge_width / 2);
 
             screw_boss();
+
+            for (xpos = wheel_x) {
+                wheel_spacer_boss(xpos, 1);
+                wheel_spacer_boss(xpos, -1);
+            }
         }
 
         screw_hole_cut();
