@@ -9,6 +9,7 @@ const repoRoot = path.resolve(__dirname, "..");
 const modelRoot = path.join(repoRoot, "matchbox-mattel-atv-6x6");
 const outputRoot = path.join(__dirname, "generated");
 const publicRoot = path.join(__dirname, "public");
+const feedbackRoot = path.join(modelRoot, "feedback");
 const port = Number.parseInt(process.env.PORT || "4173", 10);
 const openscadBin = process.env.OPENSCAD_BIN || "openscad";
 
@@ -21,6 +22,8 @@ const contentTypes = new Map([
   [".css", "text/css; charset=utf-8"],
   [".js", "text/javascript; charset=utf-8"],
   [".json", "application/json; charset=utf-8"],
+  [".png", "image/png"],
+  [".scad", "text/plain; charset=utf-8"],
   [".stl", "model/stl"],
 ]);
 
@@ -93,7 +96,7 @@ async function previewMetadata(scadFile) {
     const positiveY = constants.wheel_y ?? constants.tub_width / 2 + wheelWidth / 2 - 0.25;
     const negativeY = -positiveY;
     const axleInset = constants.preview_axle_inset ?? 0;
-    const axleLength = (constants.wheel_y ? constants.wheel_y * 2 + wheelWidth : constants.wheel_pair_width ?? constants.tub_width + wheelWidth * 2) - axleInset * 2;
+    const axleLength = constants.axle_length ?? (constants.wheel_y ? constants.wheel_y * 2 + wheelWidth : constants.wheel_pair_width ?? constants.tub_width + wheelWidth * 2) - axleInset * 2;
     const axleDiameter = constants.axle_diameter ?? 1.4;
 
     return {
@@ -143,6 +146,58 @@ function setState(scadFile, patch) {
   const next = { ...previous, ...patch };
   renderState.set(scadFile, next);
   sendEvent("status", { scadFile, ...next });
+}
+
+async function readJsonBody(request, limitBytes = 25 * 1024 * 1024) {
+  let size = 0;
+  const chunks = [];
+
+  for await (const chunk of request) {
+    size += chunk.length;
+    if (size > limitBytes) {
+      throw new Error("request body too large");
+    }
+    chunks.push(chunk);
+  }
+
+  return JSON.parse(Buffer.concat(chunks).toString("utf8"));
+}
+
+function safeFeedbackName(date = new Date()) {
+  return date.toISOString().replace(/[:.]/g, "-");
+}
+
+async function saveFeedback(request, response) {
+  const payload = await readJsonBody(request);
+  const imageMatch = /^data:image\/png;base64,([A-Za-z0-9+/=]+)$/.exec(payload.image || "");
+  if (!payload.model || !imageMatch) {
+    json(response, 400, { error: "feedback requires model and PNG image" });
+    return;
+  }
+
+  await fs.mkdir(feedbackRoot, { recursive: true });
+
+  const name = safeFeedbackName();
+  const imageFile = `${name}.png`;
+  const jsonFile = `${name}.json`;
+  const imagePath = path.join(feedbackRoot, imageFile);
+  const jsonPath = path.join(feedbackRoot, jsonFile);
+  const metadata = {
+    ...payload,
+    image: undefined,
+    imageFile,
+    savedAt: new Date().toISOString(),
+  };
+
+  await fs.writeFile(imagePath, Buffer.from(imageMatch[1], "base64"));
+  await fs.writeFile(jsonPath, `${JSON.stringify(metadata, null, 2)}\n`, "utf8");
+
+  json(response, 201, {
+    ok: true,
+    name,
+    image: `/feedback/${imageFile}`,
+    metadata: `/feedback/${jsonFile}`,
+  });
 }
 
 function renderScad(scadFile, reason = "manual") {
@@ -244,6 +299,16 @@ async function apiModels(response) {
   json(response, 200, { modelRoot, models });
 }
 
+async function sendModelSource(response, scadFile) {
+  const files = await listScadFiles();
+  if (!files.includes(scadFile)) {
+    json(response, 404, { error: "unknown model" });
+    return;
+  }
+
+  await sendFile(response, path.join(modelRoot, scadFile));
+}
+
 function json(response, status, payload) {
   response.writeHead(status, { "content-type": "application/json; charset=utf-8" });
   response.end(JSON.stringify(payload));
@@ -283,6 +348,16 @@ const server = http.createServer(async (request, response) => {
       return;
     }
 
+    if (url.pathname.startsWith("/source/") && url.pathname.endsWith(".scad") && request.method === "GET") {
+      await sendModelSource(response, path.basename(url.pathname));
+      return;
+    }
+
+    if (url.pathname.endsWith(".scad") && request.method === "GET") {
+      await sendFile(response, path.join(publicRoot, "index.html"));
+      return;
+    }
+
     if (url.pathname === "/api/render" && request.method === "POST") {
       const scadFile = url.searchParams.get("file");
       const files = await listScadFiles();
@@ -292,6 +367,11 @@ const server = http.createServer(async (request, response) => {
       }
       scheduleRender(scadFile, "manual");
       json(response, 202, { ok: true });
+      return;
+    }
+
+    if (url.pathname === "/api/feedback" && request.method === "POST") {
+      await saveFeedback(request, response);
       return;
     }
 
@@ -309,6 +389,12 @@ const server = http.createServer(async (request, response) => {
 
     if (url.pathname.startsWith("/generated/")) {
       const filePath = resolveStatic(outputRoot, url.pathname.replace("/generated", ""));
+      await sendFile(response, filePath);
+      return;
+    }
+
+    if (url.pathname.startsWith("/feedback/")) {
+      const filePath = resolveStatic(feedbackRoot, url.pathname.replace("/feedback", ""));
       await sendFile(response, filePath);
       return;
     }

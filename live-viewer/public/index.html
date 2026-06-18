@@ -19,6 +19,10 @@
         <select id="modelSelect" aria-label="Model"></select>
         <button id="renderButton" type="button">Render</button>
         <button id="resetButton" type="button">Reset View</button>
+        <button id="drawButton" type="button" aria-pressed="false">Draw</button>
+        <button id="undoDrawButton" type="button" disabled>Undo</button>
+        <button id="clearDrawButton" type="button" disabled>Clear</button>
+        <button id="saveDrawButton" type="button" disabled>Save Feedback</button>
         <label class="toggle">
           <input id="wireToggle" type="checkbox" />
           <span>Wire</span>
@@ -29,8 +33,13 @@
         </label>
         <div id="status" class="status">Connecting...</div>
       </div>
+      <div class="feedback-panel">
+        <textarea id="feedbackNote" rows="3" maxlength="1200" placeholder="Feedback"></textarea>
+        <div id="projectionReadout" class="projection-readout">screen -, ndc -, hit -</div>
+      </div>
       <pre id="log" class="log" aria-live="polite"></pre>
       <canvas id="canvas"></canvas>
+      <canvas id="drawCanvas" aria-label="Feedback drawing layer"></canvas>
     </main>
 
     <script type="module" src="/app.js"></script>

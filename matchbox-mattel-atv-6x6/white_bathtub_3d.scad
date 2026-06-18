@@ -17,12 +17,15 @@ $fn = 64;
 show_preview_wheels = true;
 show_preview_axles = true;
 
-wheel_diameter = 10.0;
-wheel_pair_width = 30.0;
-wheel_width = 5.5;
+wheel_diameter = 11.0;
+wheel_width = 6.5;
+inner_gap_between_wheels = 20.5;
+wheel_center_to_center = inner_gap_between_wheels + wheel_width;
+wheel_pair_width = inner_gap_between_wheels + 2 * wheel_width;
+axle_length = 34.0;
 wheel_spacing = 10.8;
 wheel_x = [-wheel_spacing, 0.0, wheel_spacing];
-axle_diameter = 1.0;
+axle_diameter = 1.2;
 
 profile_z_scale = 1.50;
 pocket_floor_z = 3.85;
@@ -44,7 +47,7 @@ axle_seat_clearance = 0.45;
 axle_drop_slot_clearance = 0.55;
 wheel_spacer_d = 3.0;
 wheel_spacer_depth = 0.35;
-wheel_body_clearance = 0.8;
+wheel_body_clearance = 0.0;
 front_closure_x = 16.05;
 front_closure_len = 2.7;
 
@@ -55,7 +58,7 @@ floor_z = bottom_z_front * profile_z_scale;
 inner_y = tub_width / 2 - wall_thickness;
 inner_span = tub_width - wall_thickness * 2 - 0.35;
 axle_z = wheel_center_z * profile_z_scale;
-wheel_y = wheel_pair_width / 2 - wheel_width / 2 + wheel_body_clearance;
+wheel_y = wheel_center_to_center / 2 + wheel_body_clearance;
 ledge_x_min = -12.7;
 ledge_x_max = 13.8;
 ledge_len = ledge_x_max - ledge_x_min;
@@ -228,7 +231,7 @@ module preview_axle(xpos) {
     color([0.38, 0.38, 0.34, 0.78])
         translate([xpos, 0, axle_z])
             rotate([90, 0, 0])
-                cylinder(h = wheel_y * 2 + wheel_width - preview_axle_inset * 2, d = axle_diameter, center = true);
+                cylinder(h = axle_length, d = axle_diameter, center = true);
 }
 
 color("white")

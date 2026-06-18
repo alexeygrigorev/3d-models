@@ -158,20 +158,24 @@ Current file:
 
 Current wheel assumption:
 
-- Replacement wheel pair overall width: about 30 mm.
-- Preview wheel diameter: 10 mm.
-- Preview wheel width: 5.5 mm, based on the reference photos where the wheels
-  are much narrower than their diameter.
-- Preview axle diameter: 1.0 mm.
+- Replacement wheel diameter: 11.0 mm.
+- Replacement wheel width: 6.5 mm.
+- Inner gap between wheels in a pair: 20.5 mm.
+- Center-to-center distance between paired wheels: 27.0 mm.
+- Overall wheel-pair width by outside faces: 33.5 mm.
+- Preview axle diameter: 1.2 mm.
+- Preview axle length: 34.0 mm.
+- Central hub/bushing on the real wheel appears to be about 5-6 mm diameter.
 
 Current fit details:
 
 - The wheels remain transparent preview geometry; they are not exported into
   printable STL.
-- The wheel pair is previewed at the 30 mm overall width, with the white tub
-  between the wheels.
-- The wheel preview is offset outward by a small 0.8 mm clearance. The previous
-  3 mm offset was too large and was removed.
+- The wheel pair is previewed from the measured 27.0 mm center-to-center
+  distance, with the white tub between the wheels.
+- The previous extra 0.8 mm wheel clearance is now disabled because the measured
+  wheel pair width already moves the wheels outward enough for the current
+  profile. The older 3 mm offset was too large and remains removed.
 - Each wheel pocket has a narrow open-top axle drop slot so the real wheel axle
   can be lowered into the tub from above.
 - At the bottom of each slot there is a small round axle seat.

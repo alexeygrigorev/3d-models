@@ -17,13 +17,17 @@ photos, not the older tall black sketch literally.
 ## Current Geometry Intent
 
 - The side profile is intentionally short.
-- Wheels are close together: current preview centers are `[-10.8, 0, 10.8]`
-  for 10 mm diameter wheels.
+- Wheels are close together along the vehicle length: current preview centers
+  are `[-10.8, 0, 10.8]` for 11 mm diameter wheels.
 - V pockets should be sharp and centered above each wheel.
 - Wheels should sit lower than earlier versions, with a small visual clearance
   from the body instead of being pushed hard into the upper edge.
-- In the 3D draft, preview wheels currently have a small 0.8 mm outward
-  clearance. A previous 3 mm clearance was too far and was reverted.
+- In the 3D draft, measured replacement wheels are modeled as 11.0 mm diameter
+  by 6.5 mm wide, with 27.0 mm center-to-center across each pair, 33.5 mm
+  overall wheel-pair width, and a 1.2 mm diameter axle.
+- The previous extra 0.8 mm outward clearance is disabled after applying the
+  measured wheel-pair width. A previous 3 mm clearance was too far and was
+  reverted.
 - The 3D draft has open-top axle drop slots with lower half-washer spacers, so
   the real axle can be lowered in from above while the wheel is kept off the
   side wall.

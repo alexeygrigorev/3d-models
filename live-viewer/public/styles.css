@@ -72,6 +72,17 @@ select {
   color: #edf0ea;
 }
 
+.topbar button.is-active {
+  border-color: #f2c94c;
+  background: #f2c94c;
+  color: #151611;
+}
+
+.topbar button:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+
 .toggle {
   min-height: 36px;
   padding: 0 10px;
@@ -83,6 +94,49 @@ select {
   color: #cfd5c9;
   background: #22261f;
   font-size: 13px;
+}
+
+.feedback-panel {
+  position: fixed;
+  z-index: 4;
+  right: max(10px, env(safe-area-inset-right));
+  bottom: max(10px, env(safe-area-inset-bottom));
+  width: min(360px, calc(100vw - 20px));
+  display: grid;
+  gap: 6px;
+  pointer-events: auto;
+}
+
+.feedback-panel textarea {
+  width: 100%;
+  min-height: 72px;
+  resize: vertical;
+  padding: 9px 10px;
+  border: 1px solid #30342e;
+  border-radius: 8px;
+  background: rgb(16 18 15 / 88%);
+  color: #edf0ea;
+  line-height: 1.35;
+  outline: none;
+}
+
+.feedback-panel textarea:focus {
+  border-color: #f2c94c;
+}
+
+.projection-readout {
+  min-height: 28px;
+  padding: 6px 8px;
+  overflow: hidden;
+  border: 1px solid #30342e;
+  border-radius: 8px;
+  background: rgb(16 18 15 / 78%);
+  color: #cfd5c9;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 11px;
+  line-height: 1.3;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .log {
@@ -119,6 +173,22 @@ select {
   height: 100%;
   display: block;
   touch-action: none;
+}
+
+#drawCanvas {
+  position: fixed;
+  z-index: 2;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+  pointer-events: none;
+  touch-action: none;
+}
+
+#drawCanvas.is-drawing {
+  cursor: crosshair;
+  pointer-events: auto;
 }
 
 .status {
@@ -158,5 +228,14 @@ select {
 
   .log {
     display: none;
+  }
+
+  .feedback-panel {
+    bottom: max(10px, env(safe-area-inset-bottom));
+    width: calc(100vw - 20px);
+  }
+
+  .feedback-panel textarea {
+    min-height: 58px;
   }
 }
