@@ -56,6 +56,16 @@ select {
   color: #edf0ea;
 }
 
+input[type="number"] {
+  height: 34px;
+  min-width: 0;
+  padding: 0 8px;
+  border: 1px solid #3e463d;
+  border-radius: 8px;
+  background: #22261f;
+  color: #edf0ea;
+}
+
 .topbar button {
   flex: 0 0 auto;
   min-height: 40px;
@@ -238,4 +248,5 @@ select {
   .feedback-panel textarea {
     min-height: 58px;
   }
+
 }

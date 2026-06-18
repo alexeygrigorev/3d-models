@@ -10,6 +10,7 @@ const logEl = document.querySelector("#log");
 const renderButton = document.querySelector("#renderButton");
 const resetButton = document.querySelector("#resetButton");
 const drawButton = document.querySelector("#drawButton");
+const rulerButton = document.querySelector("#rulerButton");
 const undoDrawButton = document.querySelector("#undoDrawButton");
 const clearDrawButton = document.querySelector("#clearDrawButton");
 const saveDrawButton = document.querySelector("#saveDrawButton");
@@ -40,6 +41,7 @@ controls.panSpeed = 0.8;
 
 const loader = new STLLoader();
 const raycaster = new THREE.Raycaster();
+raycaster.params.Line.threshold = 0.8;
 const pointerNdc = new THREE.Vector2();
 const material = new THREE.MeshStandardMaterial({
   color: 0xe8e2d1,
@@ -62,6 +64,10 @@ scene.add(modelGroup);
 const previewGroup = new THREE.Group();
 modelGroup.add(previewGroup);
 
+const measureGroup = new THREE.Group();
+measureGroup.visible = false;
+scene.add(measureGroup);
+
 const wheelMaterial = new THREE.MeshStandardMaterial({
   color: 0xf1ead7,
   transparent: true,
@@ -83,6 +89,18 @@ const axleMaterial = new THREE.MeshStandardMaterial({
   metalness: 0.18,
 });
 
+const rulerMaterial = new THREE.LineBasicMaterial({
+  color: 0xf2c94c,
+  depthTest: false,
+  depthWrite: false,
+});
+
+const rulerHandleMaterial = new THREE.MeshBasicMaterial({
+  color: 0xf2c94c,
+  depthTest: false,
+  depthWrite: false,
+});
+
 let models = [];
 let selected = null;
 let mesh = null;
@@ -93,6 +111,20 @@ let activeStroke = null;
 let savedDrawSize = { width: 1, height: 1 };
 const strokes = [];
 let lastProjection = null;
+let bodyBox = null;
+let visualBox = null;
+const rulerState = {
+  enabled: false,
+  axis: "x",
+  origin: new THREE.Vector3(0, 0, 0),
+  length: 10,
+  dragging: false,
+  dragMode: "new",
+  dragPlane: new THREE.Plane(),
+  dragStart: new THREE.Vector3(),
+  dragOrigin: new THREE.Vector3(),
+  fixedPoint: new THREE.Vector3(),
+};
 const drawStyle = {
   color: "#f2c94c",
   width: 4,
@@ -156,6 +188,282 @@ function cameraStateFromCurrentView() {
     spherical: new THREE.Spherical().setFromVector3(offset),
     up: camera.up.clone(),
   };
+}
+
+function axisVector(axis) {
+  if (axis === "y") {
+    return new THREE.Vector3(0, 1, 0);
+  }
+  if (axis === "z") {
+    return new THREE.Vector3(0, 0, 1);
+  }
+  return new THREE.Vector3(1, 0, 0);
+}
+
+function tickVector(axis) {
+  return axis === "z" ? new THREE.Vector3(1, 0, 0) : new THREE.Vector3(0, 0, 1);
+}
+
+function formatMm(value) {
+  return `${Number(value).toFixed(2)} mm`;
+}
+
+function boxDimensions(box) {
+  if (!box || !Number.isFinite(box.min.x) || !Number.isFinite(box.max.x)) {
+    return null;
+  }
+
+  return box.getSize(new THREE.Vector3());
+}
+
+function updateDimensions() {
+  bodyBox = mesh ? new THREE.Box3().setFromObject(mesh) : null;
+  visualBox = modelGroup.children.length ? new THREE.Box3().setFromObject(modelGroup) : null;
+}
+
+function disposeObject(object) {
+  object.geometry?.dispose();
+  if (object.material?.map) {
+    object.material.map.dispose();
+  }
+  if (object.material !== rulerMaterial && object.material !== rulerHandleMaterial) {
+    object.material?.dispose();
+  }
+}
+
+function clearMeasureGroup() {
+  for (const child of [...measureGroup.children]) {
+    measureGroup.remove(child);
+    disposeObject(child);
+  }
+}
+
+function createTextSprite(text) {
+  const labelCanvas = document.createElement("canvas");
+  labelCanvas.width = 512;
+  labelCanvas.height = 128;
+  const context = labelCanvas.getContext("2d");
+  context.clearRect(0, 0, labelCanvas.width, labelCanvas.height);
+  context.fillStyle = "rgba(16, 18, 15, 0.84)";
+  context.strokeStyle = "rgba(242, 201, 76, 0.95)";
+  context.lineWidth = 4;
+  context.beginPath();
+  context.roundRect(12, 20, 488, 84, 16);
+  context.fill();
+  context.stroke();
+  context.fillStyle = "#f6efcf";
+  context.font = "600 42px ui-monospace, SFMono-Regular, Menlo, Consolas, monospace";
+  context.textAlign = "center";
+  context.textBaseline = "middle";
+  context.fillText(text, 256, 64);
+
+  const texture = new THREE.CanvasTexture(labelCanvas);
+  const sprite = new THREE.Sprite(new THREE.SpriteMaterial({
+    map: texture,
+    depthTest: false,
+    depthWrite: false,
+  }));
+  sprite.scale.set(10, 2.5, 1);
+  sprite.renderOrder = 1000;
+  return sprite;
+}
+
+function updateRuler() {
+  rulerButton.setAttribute("aria-pressed", String(rulerState.enabled));
+  rulerButton.classList.toggle("is-active", rulerState.enabled);
+  measureGroup.visible = rulerState.enabled;
+  clearMeasureGroup();
+
+  if (!rulerState.enabled) {
+    return;
+  }
+
+  const axis = axisVector(rulerState.axis);
+  const tick = tickVector(rulerState.axis);
+  const origin = rulerState.origin.clone();
+  const end = origin.clone().add(axis.clone().multiplyScalar(rulerState.length));
+  const tickSize = Math.max(Math.min(rulerState.length * 0.12, 2), 0.8);
+  const labelOffset = tick.clone().multiplyScalar(tickSize * 1.35);
+
+  const mainGeometry = new THREE.BufferGeometry().setFromPoints([origin, end]);
+  const mainLine = new THREE.Line(mainGeometry, rulerMaterial);
+  mainLine.userData.rulerPart = "line";
+  mainLine.renderOrder = 1000;
+  measureGroup.add(mainLine);
+
+  const tickGeometry = new THREE.BufferGeometry().setFromPoints([
+    origin.clone().add(tick.clone().multiplyScalar(-tickSize / 2)),
+    origin.clone().add(tick.clone().multiplyScalar(tickSize / 2)),
+    end.clone().add(tick.clone().multiplyScalar(-tickSize / 2)),
+    end.clone().add(tick.clone().multiplyScalar(tickSize / 2)),
+  ]);
+  const ticks = new THREE.LineSegments(tickGeometry, rulerMaterial);
+  ticks.userData.rulerPart = "line";
+  ticks.renderOrder = 1000;
+  measureGroup.add(ticks);
+
+  const handleGeometry = new THREE.SphereGeometry(0.35, 16, 12);
+  for (const [index, point] of [origin, end].entries()) {
+    const handle = new THREE.Mesh(handleGeometry.clone(), rulerHandleMaterial);
+    handle.position.copy(point);
+    handle.userData.rulerPart = index === 0 ? "start" : "end";
+    handle.renderOrder = 1001;
+    measureGroup.add(handle);
+  }
+
+  const label = createTextSprite(`${rulerState.axis.toUpperCase()} ${formatMm(rulerState.length)}`);
+  label.position.copy(origin.clone().lerp(end, 0.5).add(labelOffset));
+  measureGroup.add(label);
+}
+
+function setRulerMode(enabled) {
+  rulerState.enabled = enabled;
+  if (enabled && visualBox) {
+    const center = visualBox.getCenter(new THREE.Vector3());
+    if (rulerState.origin.lengthSq() === 0) {
+      rulerState.origin.copy(center);
+    }
+  }
+  updateRuler();
+}
+
+function pointFromCanvasEvent(event) {
+  const rect = canvas.getBoundingClientRect();
+  return {
+    x: (event.clientX - rect.left) / Math.max(rect.width, 1),
+    y: (event.clientY - rect.top) / Math.max(rect.height, 1),
+  };
+}
+
+function worldPointFromProjection(projection) {
+  return projection?.hit?.point ? new THREE.Vector3(...projection.hit.point) : null;
+}
+
+function measurePlanePoint(event) {
+  const point = pointFromCanvasEvent(event);
+  pointerNdc.set(point.x * 2 - 1, -(point.y * 2 - 1));
+  raycaster.setFromCamera(pointerNdc, camera);
+  const worldPoint = new THREE.Vector3();
+  return raycaster.ray.intersectPlane(rulerState.dragPlane, worldPoint) ? worldPoint : null;
+}
+
+function dominantAxis(delta) {
+  const values = [
+    ["x", Math.abs(delta.x)],
+    ["y", Math.abs(delta.y)],
+    ["z", Math.abs(delta.z)],
+  ].sort((left, right) => right[1] - left[1]);
+  return values[0][0];
+}
+
+function setRulerFromEndpoints(first, second, axisName = dominantAxis(second.clone().sub(first))) {
+  const axis = axisVector(axisName);
+  const delta = second.clone().sub(first).dot(axis);
+  rulerState.axis = axisName;
+  rulerState.length = Math.abs(delta);
+  rulerState.origin.copy(delta < 0 ? first.clone().add(axis.multiplyScalar(delta)) : first);
+}
+
+function rulerEndPoint() {
+  return rulerState.origin.clone().add(axisVector(rulerState.axis).multiplyScalar(rulerState.length));
+}
+
+function pickRulerPart(event) {
+  if (!rulerState.enabled || !measureGroup.visible || measureGroup.children.length === 0) {
+    return null;
+  }
+
+  const point = pointFromCanvasEvent(event);
+  pointerNdc.set(point.x * 2 - 1, -(point.y * 2 - 1));
+  raycaster.setFromCamera(pointerNdc, camera);
+  const hits = raycaster.intersectObjects(measureGroup.children, true);
+  return hits.find((hit) => hit.object.userData.rulerPart)?.object.userData.rulerPart || null;
+}
+
+function startRulerDrag(event) {
+  if (!rulerState.enabled || drawMode || event.pointerType === "touch") {
+    return false;
+  }
+
+  const part = pickRulerPart(event);
+  if (part) {
+    event.preventDefault();
+    event.stopImmediatePropagation();
+    canvas.setPointerCapture(event.pointerId);
+    controls.enabled = false;
+    rulerState.dragging = true;
+    rulerState.dragMode = part === "line" ? "move" : `resize-${part}`;
+    rulerState.dragOrigin.copy(rulerState.origin);
+    const normal = camera.getWorldDirection(new THREE.Vector3()).normalize();
+    rulerState.dragPlane.setFromNormalAndCoplanarPoint(normal, rulerState.origin);
+    rulerState.dragStart.copy(measurePlanePoint(event) || rulerState.origin);
+    rulerState.fixedPoint.copy(part === "start" ? rulerEndPoint() : rulerState.origin);
+    return true;
+  }
+
+  const projection = projectionFromPoint(pointFromCanvasEvent(event));
+  updateProjectionReadout(projection);
+  const hitPoint = worldPointFromProjection(projection);
+  if (!hitPoint) {
+    return false;
+  }
+
+  event.preventDefault();
+  event.stopImmediatePropagation();
+  canvas.setPointerCapture(event.pointerId);
+  controls.enabled = false;
+  rulerState.dragging = true;
+  rulerState.dragMode = "new";
+  rulerState.origin.copy(hitPoint);
+  rulerState.dragStart.copy(hitPoint);
+  rulerState.dragOrigin.copy(hitPoint);
+  rulerState.length = 0;
+  const normal = camera.getWorldDirection(new THREE.Vector3()).normalize();
+  rulerState.dragPlane.setFromNormalAndCoplanarPoint(normal, hitPoint);
+  updateRuler();
+  return true;
+}
+
+function updateRulerDrag(event) {
+  if (!rulerState.dragging || !canvas.hasPointerCapture(event.pointerId)) {
+    return false;
+  }
+
+  event.preventDefault();
+  event.stopImmediatePropagation();
+  const worldPoint = measurePlanePoint(event);
+  if (!worldPoint) {
+    return true;
+  }
+
+  if (rulerState.dragMode === "move") {
+    rulerState.origin.copy(rulerState.dragOrigin).add(worldPoint.clone().sub(rulerState.dragStart));
+  } else if (rulerState.dragMode === "resize-start") {
+    setRulerFromEndpoints(worldPoint, rulerState.fixedPoint, rulerState.axis);
+  } else if (rulerState.dragMode === "resize-end") {
+    setRulerFromEndpoints(rulerState.fixedPoint, worldPoint, rulerState.axis);
+  } else {
+    setRulerFromEndpoints(rulerState.dragStart, worldPoint);
+  }
+
+  updateRuler();
+  return true;
+}
+
+function finishRulerDrag(event) {
+  if (!rulerState.dragging) {
+    return false;
+  }
+
+  event.preventDefault();
+  event.stopImmediatePropagation();
+  rulerState.dragging = false;
+  controls.enabled = !drawMode;
+  if (canvas.hasPointerCapture(event.pointerId)) {
+    canvas.releasePointerCapture(event.pointerId);
+  }
+  updateRuler();
+  return true;
 }
 
 function applyOrbitGesture({ dx, dy, zoom = 1, roll = 0 }) {
@@ -277,12 +585,18 @@ function projectionFromPoint(point) {
 
 function updateProjectionReadout(projection) {
   lastProjection = projection;
-  const screen = projection.screen;
-  const ndc = projection.ndc;
-  const hit = projection.hit?.point;
-  projectionReadoutEl.textContent = hit
-    ? `screen ${screen.x}, ${screen.y} | ndc ${ndc.x}, ${ndc.y} | hit ${hit.join(", ")}`
-    : `screen ${screen.x}, ${screen.y} | ndc ${ndc.x}, ${ndc.y} | hit -`;
+}
+
+function updateViewReadout() {
+  const direction = controls.target.clone().sub(camera.position);
+  const distance = direction.length();
+  direction.normalize();
+  projectionReadoutEl.textContent = [
+    `pos ${roundedArray(camera.position.toArray(), 2).join(", ")}`,
+    `target ${roundedArray(controls.target.toArray(), 2).join(", ")}`,
+    `dir ${roundedArray(direction.toArray(), 3).join(", ")}`,
+    `dist ${distance.toFixed(2)}`,
+  ].join(" | ");
 }
 
 function drawStroke(stroke) {
@@ -390,6 +704,19 @@ function currentCameraSnapshot() {
   };
 }
 
+function currentMeasureSnapshot() {
+  return {
+    ruler: {
+      enabled: rulerState.enabled,
+      axis: rulerState.axis,
+      origin: roundedArray(rulerState.origin.toArray()),
+      length: Number(rulerState.length.toFixed(3)),
+    },
+    bodyDimensions: boxDimensions(bodyBox) ? roundedArray(boxDimensions(bodyBox).toArray()) : null,
+    visualDimensions: boxDimensions(visualBox) ? roundedArray(boxDimensions(visualBox).toArray()) : null,
+  };
+}
+
 function currentFeedbackImage() {
   const rect = canvas.getBoundingClientRect();
   const output = document.createElement("canvas");
@@ -438,6 +765,7 @@ async function saveFeedback() {
       },
       note,
       camera: currentCameraSnapshot(),
+      measure: currentMeasureSnapshot(),
       lastProjection,
       strokes,
       image: currentFeedbackImage(),
@@ -459,6 +787,7 @@ async function saveFeedback() {
   activeStroke = null;
   feedbackNoteEl.value = "";
   redrawStrokes();
+  setDrawMode(false);
   setStatus(copied ? `Saved feedback and copied link: ${data.name}` : `Saved feedback: ${data.name}`);
   log(copied ? `Saved feedback ${data.name}; copied link` : `Saved feedback ${data.name}`);
   updateDrawControls();
@@ -534,7 +863,7 @@ function addPreviewWheels(model) {
   }
 }
 
-function loadStl(url) {
+function loadStl(url, options = {}) {
   if (!selected) {
     return;
   }
@@ -543,6 +872,7 @@ function loadStl(url) {
     url,
     (geometry) => {
       geometry.computeVertexNormals();
+      const hadMesh = Boolean(mesh);
       if (mesh) {
         modelGroup.remove(mesh);
         mesh.geometry.dispose();
@@ -550,7 +880,11 @@ function loadStl(url) {
       mesh = new THREE.Mesh(geometry, material);
       modelGroup.add(mesh);
       addPreviewWheels(selected);
-      frameObject(modelGroup);
+      updateDimensions();
+      updateRuler();
+      if (!options.preserveView || !hadMesh) {
+        frameObject(modelGroup);
+      }
       setStatus(`Viewing ${selected.scadFile}`);
       log(`Loaded ${selected.scadFile}`);
     },
@@ -605,6 +939,10 @@ drawButton.addEventListener("click", () => {
   setDrawMode(!drawMode);
 });
 
+rulerButton.addEventListener("click", () => {
+  setRulerMode(!rulerState.enabled);
+});
+
 undoDrawButton.addEventListener("click", () => {
   strokes.pop();
   redrawStrokes();
@@ -623,18 +961,36 @@ saveDrawButton.addEventListener("click", () => {
 });
 
 feedbackNoteEl.addEventListener("input", updateDrawControls);
+feedbackNoteEl.addEventListener("keydown", (event) => {
+  if (event.key !== "Enter" || event.shiftKey || event.metaKey || event.ctrlKey || event.altKey) {
+    return;
+  }
+
+  if (saveDrawButton.disabled) {
+    return;
+  }
+
+  event.preventDefault();
+  void saveFeedback();
+});
 
 drawCanvas.addEventListener("pointerdown", handleDrawPointerDown);
 drawCanvas.addEventListener("pointermove", handleDrawPointerMove);
 drawCanvas.addEventListener("pointerup", finishDrawStroke);
 drawCanvas.addEventListener("pointercancel", finishDrawStroke);
 
+canvas.addEventListener("pointerdown", (event) => {
+  startRulerDrag(event);
+}, { capture: true });
 canvas.addEventListener("pointermove", (event) => {
-  if (drawMode) {
-    return;
-  }
-  updateProjectionReadout(projectionFromPoint(pointFromDrawEvent(event)));
-});
+  updateRulerDrag(event);
+}, { capture: true });
+canvas.addEventListener("pointerup", (event) => {
+  finishRulerDrag(event);
+}, { capture: true });
+canvas.addEventListener("pointercancel", (event) => {
+  finishRulerDrag(event);
+}, { capture: true });
 
 wireToggle.addEventListener("change", () => {
   material.wireframe = wireToggle.checked;
@@ -788,13 +1144,14 @@ events.addEventListener("model", (event) => {
     model.preview = data.preview;
   }
   if (selected?.scadFile === data.scadFile) {
-    loadStl(data.url);
+    loadStl(data.url, { preserveView: true });
   }
 });
 events.addEventListener("error", () => setStatus("Reconnecting..."));
 
 function animate() {
   controls.update();
+  updateViewReadout();
   renderer.render(scene, camera);
   requestAnimationFrame(animate);
 }

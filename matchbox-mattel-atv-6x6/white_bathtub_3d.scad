@@ -17,7 +17,7 @@ $fn = 64;
 show_preview_wheels = true;
 show_preview_axles = true;
 
-wheel_diameter = 11.0;
+wheel_diameter = 10.0;
 wheel_width = 6.5;
 inner_gap_between_wheels = 20.5;
 wheel_center_to_center = inner_gap_between_wheels + wheel_width;
@@ -68,10 +68,9 @@ module side_profile_2d() {
     scale([1, profile_z_scale])
         polygon(points=[
             [-13.7, bottom_z_rear - 0.08],
-            [-15.0, bottom_z_rear - 0.08],
-            [-16.3, bottom_z_rear + 0.18],
-            [-16.4, top_z_rear - 0.18],
-            [-16.2, top_z_rear],
+            [-14.35, bottom_z_rear + 0.36],
+            [-16.25, top_z_rear - 0.25],
+            [-16.05, top_z_rear],
             [-13.2, top_z_rear + 0.03],
             [-10.8, pocket_floor_z],
             [ -8.4, top_z_rear + 0.03],
@@ -151,10 +150,10 @@ module axle_saddle_cut(xpos) {
             cylinder(h = inner_span - ledge_width * 2.2, d = axle_diameter + 1.0, center = true);
 }
 
-module axle_pocket_seat_cut(xpos) {
-    translate([xpos, 0, axle_z])
+module axle_pocket_seat_cut(xpos, side) {
+    translate([xpos, side * (tub_width / 2 - wall_thickness - 0.35), axle_z])
         rotate([90, 0, 0])
-            cylinder(h = tub_width + 0.8, d = axle_diameter + axle_seat_clearance, center = true);
+            cylinder(h = wall_thickness + 0.35, d = axle_diameter + axle_seat_clearance, center = true);
 }
 
 module axle_drop_slot_cut(xpos, side) {
@@ -211,9 +210,9 @@ module bathtub_body() {
         screw_hole_cut();
         for (xpos = wheel_x)
             axle_saddle_cut(xpos);
-        for (xpos = wheel_x)
-            axle_pocket_seat_cut(xpos);
         for (xpos = wheel_x) {
+            axle_pocket_seat_cut(xpos, 1);
+            axle_pocket_seat_cut(xpos, -1);
             axle_drop_slot_cut(xpos, 1);
             axle_drop_slot_cut(xpos, -1);
         }

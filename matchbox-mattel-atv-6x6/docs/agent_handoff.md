@@ -22,9 +22,10 @@ photos, not the older tall black sketch literally.
 - V pockets should be sharp and centered above each wheel.
 - Wheels should sit lower than earlier versions, with a small visual clearance
   from the body instead of being pushed hard into the upper edge.
-- In the 3D draft, measured replacement wheels are modeled as 11.0 mm diameter
-  by 6.5 mm wide, with 27.0 mm center-to-center across each pair, 33.5 mm
-  overall wheel-pair width, and a 1.2 mm diameter axle.
+- In the 3D draft, replacement wheels are currently previewed as 10.0 mm
+  diameter by 6.5 mm wide, with 27.0 mm center-to-center across each pair,
+  33.5 mm overall wheel-pair width, and a 1.2 mm diameter axle. A previous
+  photo-based 11.0 mm estimate looked too large in live preview.
 - The previous extra 0.8 mm outward clearance is disabled after applying the
   measured wheel-pair width. A previous 3 mm clearance was too far and was
   reverted.

@@ -158,7 +158,9 @@ Current file:
 
 Current wheel assumption:
 
-- Replacement wheel diameter: 11.0 mm.
+- Replacement wheel diameter: 10.0 mm for the current visual fit. Earlier photo
+  estimate was 11.0 mm with about +/-0.5 mm uncertainty, but it looked too large
+  in the live preview.
 - Replacement wheel width: 6.5 mm.
 - Inner gap between wheels in a pair: 20.5 mm.
 - Center-to-center distance between paired wheels: 27.0 mm.
