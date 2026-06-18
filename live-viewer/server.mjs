@@ -93,7 +93,7 @@ async function previewMetadata(scadFile) {
     const positiveY = constants.wheel_y ?? constants.tub_width / 2 + wheelWidth / 2 - 0.25;
     const negativeY = -positiveY;
     const axleInset = constants.preview_axle_inset ?? 0;
-    const axleLength = (constants.wheel_pair_width ?? constants.tub_width + wheelWidth * 2) - axleInset * 2;
+    const axleLength = (constants.wheel_y ? constants.wheel_y * 2 + wheelWidth : constants.wheel_pair_width ?? constants.tub_width + wheelWidth * 2) - axleInset * 2;
     const axleDiameter = constants.axle_diameter ?? 1.4;
 
     return {

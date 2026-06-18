@@ -170,6 +170,8 @@ Current fit details:
   printable STL.
 - The wheel pair is previewed at the 30 mm overall width, with the white tub
   between the wheels.
+- The wheel preview is offset outward by a small 0.8 mm clearance. The previous
+  3 mm offset was too large and was removed.
 - Each wheel pocket has a narrow open-top axle drop slot so the real wheel axle
   can be lowered into the tub from above.
 - At the bottom of each slot there is a small round axle seat.
@@ -180,3 +182,15 @@ Current fit details:
   white tub side wall.
 - Do not replace the half-washer with a full circular boss unless axle
   insertion is solved another way.
+- The preview axle length is derived from the actual preview wheel center
+  position, so the live viewer keeps the visible axle aligned with any wheel
+  spacing adjustment.
+
+## Current 3D front closure
+
+- The front opening of the white bathtub is now partially closed.
+- The closure is not a rectangular block. It is clipped from the existing outer
+  profile with `intersection()`, so it follows the current front slope and
+  bathtub angle.
+- The closure is only a temporary shape check for the front hole. Keep future
+  edits tied to the side profile instead of adding arbitrary flat plates.

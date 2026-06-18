@@ -44,6 +44,9 @@ axle_seat_clearance = 0.45;
 axle_drop_slot_clearance = 0.55;
 wheel_spacer_d = 3.0;
 wheel_spacer_depth = 0.35;
+wheel_body_clearance = 0.8;
+front_closure_x = 16.05;
+front_closure_len = 2.7;
 
 x_min = -16.7;
 x_max = 18.8;
@@ -52,7 +55,7 @@ floor_z = bottom_z_front * profile_z_scale;
 inner_y = tub_width / 2 - wall_thickness;
 inner_span = tub_width - wall_thickness * 2 - 0.35;
 axle_z = wheel_center_z * profile_z_scale;
-wheel_y = wheel_pair_width / 2 - wheel_width / 2;
+wheel_y = wheel_pair_width / 2 - wheel_width / 2 + wheel_body_clearance;
 ledge_x_min = -12.7;
 ledge_x_max = 13.8;
 ledge_len = ledge_x_max - ledge_x_min;
@@ -120,6 +123,23 @@ module screw_hole_cut() {
         cylinder(h = 4.0, d = screw_hole_d);
 }
 
+module front_closure_panel() {
+    intersection() {
+        outer_profile_body();
+
+        translate([
+            front_closure_x,
+            0,
+            (floor_z + top_z_front * profile_z_scale) / 2
+        ])
+            cube([
+                front_closure_len,
+                tub_width - 0.2,
+                top_z_front * profile_z_scale - floor_z + 0.6
+            ], center = true);
+    }
+}
+
 module axle_saddle_cut(xpos) {
     // Internal lower cradle only. It stays away from the side panels, so the
     // white tub does not gain visible round axle holes.
@@ -177,6 +197,7 @@ module bathtub_body() {
             internal_ledge(-inner_y + ledge_width / 2);
 
             screw_boss();
+            front_closure_panel();
 
             for (xpos = wheel_x) {
                 wheel_spacer_boss(xpos, 1);
@@ -207,7 +228,7 @@ module preview_axle(xpos) {
     color([0.38, 0.38, 0.34, 0.78])
         translate([xpos, 0, axle_z])
             rotate([90, 0, 0])
-                cylinder(h = wheel_pair_width - preview_axle_inset * 2, d = axle_diameter, center = true);
+                cylinder(h = wheel_y * 2 + wheel_width - preview_axle_inset * 2, d = axle_diameter, center = true);
 }
 
 color("white")

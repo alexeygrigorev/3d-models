@@ -22,6 +22,14 @@ photos, not the older tall black sketch literally.
 - V pockets should be sharp and centered above each wheel.
 - Wheels should sit lower than earlier versions, with a small visual clearance
   from the body instead of being pushed hard into the upper edge.
+- In the 3D draft, preview wheels currently have a small 0.8 mm outward
+  clearance. A previous 3 mm clearance was too far and was reverted.
+- The 3D draft has open-top axle drop slots with lower half-washer spacers, so
+  the real axle can be lowered in from above while the wheel is kept off the
+  side wall.
+- The 3D draft front opening is partially closed with a piece clipped from the
+  existing outer profile, so it follows the front bathtub slope instead of using
+  a rectangular cap.
 - The left/rear rectangular tail from earlier versions was removed.
 - The current work is still a profile and first bathtub draft, not a final
   printable assembly.
@@ -74,4 +82,3 @@ Before continuing the full 3D tub, finish the side profile tweaks requested in
 the latest feedback. Then update `white_bathtub_3d.scad` from
 `white_bathtub_current.scad`, because the 3D draft is currently only a first
 structural translation of the profile.
-
