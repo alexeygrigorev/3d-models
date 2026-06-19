@@ -728,6 +728,21 @@ function currentFeedbackImage() {
   return output.toDataURL("image/png");
 }
 
+function compactStrokePoint(point) {
+  return {
+    x: Number(point.x.toFixed(5)),
+    y: Number(point.y.toFixed(5)),
+  };
+}
+
+function compactStrokesForSave() {
+  return strokes.map((stroke) => ({
+    color: stroke.color,
+    width: stroke.width,
+    points: stroke.points.map(compactStrokePoint),
+  }));
+}
+
 async function copyFeedbackReference(data) {
   if (!navigator.clipboard) {
     return false;
@@ -767,7 +782,7 @@ async function saveFeedback() {
       camera: currentCameraSnapshot(),
       measure: currentMeasureSnapshot(),
       lastProjection,
-      strokes,
+      strokes: compactStrokesForSave(),
       image: currentFeedbackImage(),
       savedAt: new Date().toISOString(),
     }),

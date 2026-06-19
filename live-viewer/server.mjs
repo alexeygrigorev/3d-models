@@ -167,6 +167,66 @@ function safeFeedbackName(date = new Date()) {
   return date.toISOString().replace(/[:.]/g, "-");
 }
 
+function compactStatus(status) {
+  if (!status || typeof status !== "object") {
+    return null;
+  }
+
+  const {
+    status: currentStatus,
+    message,
+    reason,
+    startedAt,
+    finishedAt,
+    url,
+  } = status;
+
+  return {
+    status: currentStatus,
+    message,
+    reason,
+    startedAt,
+    finishedAt,
+    url,
+  };
+}
+
+function compactStrokePoint(point) {
+  return {
+    x: Number(Number(point?.x || 0).toFixed(5)),
+    y: Number(Number(point?.y || 0).toFixed(5)),
+  };
+}
+
+function compactStrokes(strokes) {
+  if (!Array.isArray(strokes)) {
+    return [];
+  }
+
+  return strokes.map((stroke) => ({
+    color: stroke.color,
+    width: stroke.width,
+    points: Array.isArray(stroke.points)
+      ? stroke.points.map(compactStrokePoint)
+      : [],
+  }));
+}
+
+function compactFeedbackPayload(payload, imageFile) {
+  return {
+    model: payload.model,
+    status: compactStatus(payload.status),
+    viewport: payload.viewport || null,
+    note: payload.note || "",
+    camera: payload.camera || null,
+    measure: payload.measure || null,
+    lastProjection: payload.lastProjection || null,
+    strokes: compactStrokes(payload.strokes),
+    savedAt: new Date().toISOString(),
+    imageFile,
+  };
+}
+
 async function saveFeedback(request, response) {
   const payload = await readJsonBody(request);
   const imageMatch = /^data:image\/png;base64,([A-Za-z0-9+/=]+)$/.exec(payload.image || "");
@@ -182,12 +242,7 @@ async function saveFeedback(request, response) {
   const jsonFile = `${name}.json`;
   const imagePath = path.join(feedbackRoot, imageFile);
   const jsonPath = path.join(feedbackRoot, jsonFile);
-  const metadata = {
-    ...payload,
-    image: undefined,
-    imageFile,
-    savedAt: new Date().toISOString(),
-  };
+  const metadata = compactFeedbackPayload(payload, imageFile);
 
   await fs.writeFile(imagePath, Buffer.from(imageMatch[1], "base64"));
   await fs.writeFile(jsonPath, `${JSON.stringify(metadata, null, 2)}\n`, "utf8");
