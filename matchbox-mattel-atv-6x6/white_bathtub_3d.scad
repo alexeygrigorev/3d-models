@@ -158,13 +158,13 @@ module axle_pocket_seat_cut(xpos, side) {
 
 module axle_drop_slot_cut(xpos, side) {
     slot_width = axle_diameter + axle_drop_slot_clearance;
-    slot_depth = wall_thickness + 0.45;
+    slot_depth = 0.70;
     slot_bottom_z = axle_z;
     slot_top_z = top_z_front * profile_z_scale + 0.8;
 
     translate([
         xpos,
-        side * (tub_width / 2 - wall_thickness / 2),
+        side * (tub_width / 2 - wall_thickness - slot_depth / 2),
         (slot_bottom_z + slot_top_z) / 2
     ])
         cube([
