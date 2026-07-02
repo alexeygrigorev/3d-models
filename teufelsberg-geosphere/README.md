@@ -89,8 +89,19 @@ printf '#!/usr/bin/env bash\nexec %s/.local/opt/openscad-nightly/usr/bin/opensca
   > ~/.local/bin/openscad-manifold && chmod +x ~/.local/bin/openscad-manifold
 ```
 
+## STL size
+
+Two things keep the STL small (it was ~25 MB before):
+
+- **Binary STL** (`--export-format binstl`) — ~5× smaller than the CLI-default
+  ASCII. Used by `render.sh` and the live viewer.
+- **Cylinder struts** — each edge is a `cylinder` (node spheres cover the caps)
+  instead of a `hull()` of two spheres, which carried hundreds of triangles each.
+
+Result: ~1.9 MB (freq 4) / ~1.1 MB (freq 3). Lower `strut_fn` to shrink further.
+
 ## Render
 
 ```bash
-./render.sh      # uses openscad-manifold automatically when present
+./render.sh      # uses openscad-manifold automatically, exports binary STL
 ```

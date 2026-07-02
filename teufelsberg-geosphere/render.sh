@@ -32,6 +32,7 @@ mkdir -p "$ROOT/renders" "$ROOT/stl"
   --camera=0,0,0,55,0,20,150 --colorscheme=Tomorrow \
   "$ROOT/geosphere.scad"
 
-"$OPENSCAD_BIN" -o "$ROOT/stl/geosphere.stl" "$ROOT/geosphere.scad"
+# binary STL is ~5x smaller than the CLI-default ASCII
+"$OPENSCAD_BIN" --export-format binstl -o "$ROOT/stl/geosphere.stl" "$ROOT/geosphere.scad"
 
-echo "Wrote renders/geosphere_preview.png and stl/geosphere.stl (via $OPENSCAD_BIN)"
+echo "Wrote renders/geosphere_preview.png and stl/geosphere.stl (binary, via $OPENSCAD_BIN)"

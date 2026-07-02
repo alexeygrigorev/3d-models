@@ -16,7 +16,7 @@
 R    = 15;    // sphere radius (mm)
 rim  = 0.45;  // strut radius (mm) -> raised border thickness
 node = 0.65;  // hub radius at each vertex (mm); set = rim to disable distinct hubs
-strut_fn = 24;   // strut/hub roundness (segments); higher = rounder
+strut_fn = 16;   // strut/hub roundness (segments); higher = rounder, heavier
 
 fill = true;  // true = filled opaque triangle panels; false = hollow see-through cage
 
@@ -991,11 +991,16 @@ edges = [
   [160, 161],
 ];
 
+// light strut = a cylinder a->b (far fewer triangles than a hull of two
+// spheres); the node hubs cover the flat end caps.
 module strut(i, j) {
-  hull() {
-    translate(verts[i] * R) sphere(rim, $fn = strut_fn);
-    translate(verts[j] * R) sphere(rim, $fn = strut_fn);
-  }
+  a = verts[i] * R;
+  b = verts[j] * R;
+  d = b - a;
+  h = norm(d);
+  translate(a)
+    rotate([0, acos(d[2] / h), atan2(d[1], d[0])])
+      cylinder(h = h, r = rim, $fn = strut_fn);
 }
 
 union() {

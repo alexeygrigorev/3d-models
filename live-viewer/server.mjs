@@ -270,6 +270,8 @@ function renderScad(scadFile, reason = "manual") {
     const source = path.join(modelRoot, scadFile);
     const target = outputPath(scadFile);
     const args = [
+      "--export-format",
+      "binstl",           // binary STL is ~5x smaller than the CLI-default ASCII
       "-D",
       "show_preview_wheels=false",
       "-D",
