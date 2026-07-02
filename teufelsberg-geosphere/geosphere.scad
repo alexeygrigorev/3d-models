@@ -13,9 +13,9 @@
       python3 generate_triangulated.py <freq> <jitter> > geosphere.scad
 */
 
-R    = 30;    // sphere radius (mm)
-rim  = 0.9;   // strut radius (mm) -> raised border thickness
-node = 1.3;   // hub radius at each vertex (mm); set = rim to disable distinct hubs
+R    = 15;    // sphere radius (mm)
+rim  = 0.45;  // strut radius (mm) -> raised border thickness
+node = 0.65;  // hub radius at each vertex (mm); set = rim to disable distinct hubs
 strut_fn = 24;   // strut/hub roundness (segments); higher = rounder
 
 fill = true;  // true = filled opaque triangle panels; false = hollow see-through cage
