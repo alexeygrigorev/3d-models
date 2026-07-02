@@ -93,6 +93,29 @@ input[type="number"] {
   opacity: 0.45;
 }
 
+.topbar .download-link {
+  flex: 0 0 auto;
+  min-height: 40px;
+  display: inline-flex;
+  align-items: center;
+  padding: 0 12px;
+  border: 1px solid #3e463d;
+  border-radius: 8px;
+  background: #2f4a3a;
+  color: #edf0ea;
+  text-decoration: none;
+  font: inherit;
+}
+
+.topbar .download-link:hover {
+  border-color: #6fae7f;
+}
+
+.topbar .download-link.disabled {
+  pointer-events: none;
+  opacity: 0.45;
+}
+
 .toggle {
   min-height: 36px;
   padding: 0 10px;

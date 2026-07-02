@@ -18,6 +18,8 @@ const feedbackNoteEl = document.querySelector("#feedbackNote");
 const projectionReadoutEl = document.querySelector("#projectionReadout");
 const wireToggle = document.querySelector("#wireToggle");
 const gridToggle = document.querySelector("#gridToggle");
+const downloadScadEl = document.querySelector("#downloadScad");
+const downloadStlEl = document.querySelector("#downloadStl");
 const drawContext = drawCanvas.getContext("2d");
 
 const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, preserveDrawingBuffer: true });
@@ -263,7 +265,7 @@ function createTextSprite(text) {
     depthTest: false,
     depthWrite: false,
   }));
-  sprite.scale.set(10, 2.5, 1);
+  sprite.scale.set(5.6, 1.4, 1);
   sprite.renderOrder = 1000;
   return sprite;
 }
@@ -530,10 +532,28 @@ function updateModelPath(scadFile, replace = false) {
   window.history[method]({ scadFile }, "", nextPath);
 }
 
+function updateDownloadLinks() {
+  const disabled = !selected;
+  for (const el of [downloadScadEl, downloadStlEl]) {
+    if (el) {
+      el.classList.toggle("disabled", disabled);
+    }
+  }
+  if (!selected) {
+    return;
+  }
+  const base = selected.name || selected.scadFile.replace(/\.scad$/, "");
+  downloadScadEl.href = `/source/${encodeURIComponent(selected.scadFile)}`;
+  downloadScadEl.setAttribute("download", `${base}.scad`);
+  downloadStlEl.href = `${selected.stlUrl}?v=${Date.now()}`;
+  downloadStlEl.setAttribute("download", `${base}.stl`);
+}
+
 function selectModel(scadFile, options = {}) {
   selected = models.find((model) => model.scadFile === scadFile) || models[0] || null;
   renderModelSelect();
   updateDrawControls();
+  updateDownloadLinks();
   if (selected) {
     if (options.updateUrl !== false) {
       updateModelPath(selected.scadFile, options.replaceUrl);
@@ -621,8 +641,119 @@ function drawStroke(stroke) {
   drawContext.restore();
 }
 
+function screenPointFromWorld(point) {
+  const projected = point.clone().project(camera);
+  return {
+    x: (projected.x * 0.5 + 0.5) * savedDrawSize.width,
+    y: (-projected.y * 0.5 + 0.5) * savedDrawSize.height,
+  };
+}
+
+function screenVectorFromWorldDirection(origin, direction, length) {
+  const start = screenPointFromWorld(origin);
+  const end = screenPointFromWorld(origin.clone().add(direction.clone().multiplyScalar(length)));
+  const dx = end.x - start.x;
+  const dy = end.y - start.y;
+  const magnitude = Math.hypot(dx, dy);
+  if (magnitude < 0.001) {
+    return null;
+  }
+  return { x: dx / magnitude, y: dy / magnitude };
+}
+
+function drawCompassLabel(text, x, y) {
+  const paddingX = 6;
+  const width = Math.min(Math.max(drawContext.measureText(text).width + paddingX * 2, 54), 86);
+  const height = 22;
+  const left = Math.max(8, Math.min(x - width / 2, savedDrawSize.width - width - 8));
+  const top = Math.max(8, Math.min(y - height / 2, savedDrawSize.height - height - 8));
+
+  drawContext.fillStyle = "rgba(16, 18, 15, 0.82)";
+  drawContext.strokeStyle = "rgba(242, 201, 76, 0.85)";
+  drawContext.lineWidth = 1.5;
+  drawContext.beginPath();
+  drawContext.roundRect(left, top, width, height, 5);
+  drawContext.fill();
+  drawContext.stroke();
+
+  drawContext.fillStyle = "#f6efcf";
+  drawContext.fillText(text, left + width / 2, top + height / 2 + 0.5);
+}
+
+function drawCompassArrow(centerX, centerY, vector, label, color, radius) {
+  const endX = centerX + vector.x * radius;
+  const endY = centerY + vector.y * radius;
+  const angle = Math.atan2(vector.y, vector.x);
+  const headLength = 9;
+  const labelDistance = radius + 29;
+
+  drawContext.strokeStyle = color;
+  drawContext.fillStyle = color;
+  drawContext.lineWidth = 2.25;
+  drawContext.beginPath();
+  drawContext.moveTo(centerX, centerY);
+  drawContext.lineTo(endX, endY);
+  drawContext.stroke();
+
+  drawContext.beginPath();
+  drawContext.moveTo(endX, endY);
+  drawContext.lineTo(
+    endX - Math.cos(angle - Math.PI / 6) * headLength,
+    endY - Math.sin(angle - Math.PI / 6) * headLength,
+  );
+  drawContext.lineTo(
+    endX - Math.cos(angle + Math.PI / 6) * headLength,
+    endY - Math.sin(angle + Math.PI / 6) * headLength,
+  );
+  drawContext.closePath();
+  drawContext.fill();
+
+  drawCompassLabel(label, centerX + vector.x * labelDistance, centerY + vector.y * labelDistance);
+}
+
+function drawOrientationGuide() {
+  if (!bodyBox || !Number.isFinite(bodyBox.min.x) || !Number.isFinite(bodyBox.max.x)) {
+    return;
+  }
+
+  const size = bodyBox.getSize(new THREE.Vector3());
+  const origin = bodyBox.getCenter(new THREE.Vector3());
+  const referenceLength = Math.max(size.x, size.y, size.z, 1) * 0.45;
+  const centerX = Math.min(116, Math.max(92, savedDrawSize.width * 0.13));
+  const centerY = Math.min(Math.max(220, savedDrawSize.height * 0.27), savedDrawSize.height - 124);
+  const radius = 40;
+  const axes = [
+    { direction: new THREE.Vector3(1, 0, 0), label: "FRONT +X", color: "#4ea3ff" },
+    { direction: new THREE.Vector3(-1, 0, 0), label: "REAR -X", color: "#4ea3ff" },
+    { direction: new THREE.Vector3(0, 1, 0), label: "LEFT +Y", color: "#f2c94c" },
+    { direction: new THREE.Vector3(0, -1, 0), label: "RIGHT -Y", color: "#f2c94c" },
+  ];
+
+  drawContext.save();
+  drawContext.font = "600 11px ui-monospace, SFMono-Regular, Menlo, Consolas, monospace";
+  drawContext.textAlign = "center";
+  drawContext.textBaseline = "middle";
+  drawContext.fillStyle = "rgba(16, 18, 15, 0.72)";
+  drawContext.strokeStyle = "rgba(237, 240, 234, 0.22)";
+  drawContext.lineWidth = 1;
+  drawContext.beginPath();
+  drawContext.arc(centerX, centerY, 7, 0, Math.PI * 2);
+  drawContext.fill();
+  drawContext.stroke();
+
+  for (const axis of axes) {
+    const vector = screenVectorFromWorldDirection(origin, axis.direction, referenceLength);
+    if (vector) {
+      drawCompassArrow(centerX, centerY, vector, axis.label, axis.color, radius);
+    }
+  }
+
+  drawContext.restore();
+}
+
 function redrawStrokes() {
   drawContext.clearRect(0, 0, savedDrawSize.width, savedDrawSize.height);
+  drawOrientationGuide();
   for (const stroke of strokes) {
     drawStroke(stroke);
   }
@@ -1158,8 +1289,12 @@ events.addEventListener("model", (event) => {
   if (model && data.preview) {
     model.preview = data.preview;
   }
+  if (model && data.url) {
+    model.stlUrl = data.url;
+  }
   if (selected?.scadFile === data.scadFile) {
     loadStl(data.url, { preserveView: true });
+    updateDownloadLinks();
   }
 });
 events.addEventListener("error", () => setStatus("Reconnecting..."));
@@ -1168,6 +1303,7 @@ function animate() {
   controls.update();
   updateViewReadout();
   renderer.render(scene, camera);
+  redrawStrokes();
   requestAnimationFrame(animate);
 }
 
