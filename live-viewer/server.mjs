@@ -6,7 +6,9 @@ import { fileURLToPath } from "node:url";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const repoRoot = path.resolve(__dirname, "..");
-const modelRoot = path.join(repoRoot, "matchbox-mattel-atv-6x6");
+const modelRoot = process.env.MODEL_DIR
+  ? path.resolve(process.env.MODEL_DIR)
+  : path.join(repoRoot, "matchbox-mattel-atv-6x6");
 const outputRoot = path.join(__dirname, "generated");
 const publicRoot = path.join(__dirname, "public");
 const feedbackRoot = path.join(modelRoot, "feedback");
