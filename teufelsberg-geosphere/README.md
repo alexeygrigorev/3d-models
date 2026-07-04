@@ -9,21 +9,58 @@ radome domes at the former listening station on
   see-through.
 - On top runs a **raised round frame**: a strut along every edge with a hub at
   every node, like the real dome's structural frame (the "bortik").
-- The triangulation is a subdivided icosahedron with **jittered vertices**, so
-  triangle size/shape **vary** across the surface (less regular than a uniform
-  grid), keeping the pentagon-node / hexagon-flower structure of a real dome.
+- Two triangulation methods (below): a subdivided icosahedron, or — closer to
+  the real dome — the convex hull of an evenly spread Fibonacci point set.
 
 ![preview](renders/geosphere_preview.png)
 
 ## Files
 
-- `generate_triangulated.py` — computes the mesh and emits `geosphere.scad`.
-- `geosphere.scad` — **generated**; edit the generator, not this file.
+- `geosphere.scad` — main model. **Generated**; edit the generator, not the file.
+- `generate_triangulated.py` — subdivided-icosahedron generator (jittered
+  vertices). Emits `geosphere.scad` and `geosphere_large_triangles.scad`. Nodes
+  are only ever valence **5 or 6** — this pattern can never make a 7.
+- `generate_delaunay.py` — **Fibonacci / convex-hull** generator → `geosphere_fibonacci.scad`.
+- `geosphere_fibonacci.scad` — **generated** (`generate_delaunay.py 42`).
 - `generate_goldberg.py` — alternative *hexagonal* (Goldberg) variant, matching
   the tall spherical radome instead of the triangular ones.
 - `render.sh`, `renders/`, `stl/` — preview + printable STL.
 
-## Parameters
+### Fibonacci / convex-hull variant — closest to the real dome
+
+`generate_delaunay.py` builds the node set in four steps, then triangulates it
+by its convex hull (= Delaunay on the sphere):
+
+1. **Fibonacci spiral** — spread N points evenly (a clean 5/6-only lattice).
+2. **Jitter** — nudge them, injecting 5–7 defect pairs (this is what makes the
+   **7**s; a subdivided icosahedron or a plain Fibonacci sphere never has any).
+3. **Relax** — Lloyd/Laplacian smoothing to even the triangles back out (so they
+   stay near-equilateral and **neat**) and dissolve stray valence-4/8 nodes.
+
+The result reproduces the real radome's node mix: mostly **6** struts per node,
+less often **5**, and here and there **7** (by Euler there are always exactly 12
+more 5s than 7s, so this ordering is automatic). Default `N=152` → 300 triangles,
+valence mix 5→45, 6→66, 7→37 (plus a few 4/8 nodes that add to the variety).
+
+![fibonacci preview](renders/geosphere_fibonacci_preview.png)
+
+```bash
+python3 generate_delaunay.py 152 1.0 8 > geosphere_fibonacci.scad
+#                            |   |   |
+#                          N |   |   | relax passes (neatens triangles)
+#                            |   | jitter (irregularity; more -> more 7s + variety)
+```
+
+- `N`: number of nodes. **Fewer = bigger triangles.** `N` gives `2N-4` triangles.
+- `jitter`: irregularity. Low (`~0.6`) → uniform, only 5/6/7; high (`~1.0`) → more
+  7s and more **size variety**, at the cost of the odd valence-4/8 node.
+- `relax`: smoothing passes. Low (`~8`) keeps size variety; high (`~25`) evens the
+  triangles out (can look too regular) and clears stray 4/8 nodes.
+
+The RNG seed is fixed (`random.seed(20)`); change N/jitter/relax and you may want a
+different seed for a nicer mix (the generator prints the valence counts to stderr).
+
+## Parameters (subdivided-icosahedron variant)
 
 Pattern is set when generating:
 
