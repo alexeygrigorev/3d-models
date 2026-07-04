@@ -9,8 +9,8 @@ OpenSCAD model of the small round plastic token from the photo reference.
 
 The model is double-sided: the same relief is repeated on the top and bottom.
 It includes the white body, raised outer rim, recessed blue annular inlay,
-central white shelf, one narrow circular groove around the opening, and the rounded
-butterfly/bow-tie through-slot.
+raised central rim, recessed center basin, and the rounded butterfly/bow-tie
+through-slot.
 
 ## Parameters
 
@@ -20,12 +20,12 @@ Important dimensions are at the top of `butterfly_token.scad`:
 |------|---------|
 | `outer_d` | measured outside diameter |
 | `total_h` | total token thickness |
+| `recess_drop` | depth of the blue and center recessed fields |
 | `blue_h` | height of the blue inlay |
 | `blue_surface_drop` | how far the blue surface sits below the white ribs |
 | `outer_rim_w` | width of the outside white rim |
 | `center_r` | radius of the raised center island |
-| `slot_groove_r` | center radius of the single circular groove around the slot |
-| `slot_groove_profile_r` | radius/depth of that narrow groove profile |
+| `slot_basin_r` | radius of the recessed center field around the slot |
 
 Set `part` to export either the complete model or split color parts:
 

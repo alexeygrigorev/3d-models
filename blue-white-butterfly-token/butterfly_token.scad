@@ -15,7 +15,8 @@ part = "assembled"; // "assembled", "white", or "blue"
 outer_d = 28.9;
 total_h = 2.35;
 blue_h = 0.22;
-blue_surface_drop = 0.16;
+recess_drop = 0.42;
+blue_surface_drop = recess_drop;
 blue_pocket_depth = blue_surface_drop + blue_h;
 
 outer_r = outer_d / 2;
@@ -23,8 +24,8 @@ outer_rim_w = 1.45;
 blue_outer_r = outer_r - outer_rim_w;
 center_r = 6.75;
 blue_inner_r = center_r + 0.12;
-slot_groove_r = 5.15;
-slot_groove_profile_r = 0.045;
+slot_basin_r = 5.15;
+slot_basin_drop = recess_drop;
 
 bevel = 0.28;
 
@@ -124,18 +125,20 @@ module side_annulus_cut(r_outer, r_inner, depth, side) {
             annulus_2d(r_outer, r_inner);
 }
 
-module circular_groove_cut(radius, profile_r, side) {
-    rotate_extrude(convexity = 10)
-        translate([radius, side * total_h / 2])
-            circle(r = profile_r);
+module side_circle_cut(r, depth, side) {
+    z = side > 0 ? total_h / 2 - depth : -total_h / 2 - 0.01;
+
+    translate([0, 0, z])
+        linear_extrude(height = depth + 0.02)
+            circle(r = r);
 }
 
 module side_relief_cuts(side) {
     // Blue inlay pocket.
     side_annulus_cut(blue_outer_r - 0.16, blue_inner_r, blue_pocket_depth, side);
 
-    // One narrow circular groove around the butterfly, not a broad two-edge shelf.
-    circular_groove_cut(slot_groove_r, slot_groove_profile_r, side);
+    // Inner recessed basin: the butterfly slot lives in this lower center field.
+    side_circle_cut(slot_basin_r, slot_basin_drop, side);
 }
 
 module white_body() {
